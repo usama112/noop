@@ -51,9 +51,9 @@ final class StepsCounterTests: XCTestCase {
     }
 
     func testRejectsPhysicallyImpossibleOneSecondSpikeButAllowsSameTicksAcrossTime() {
-        XCTAssertNil(StepsCounter.stepsInWindow([step(0, 100), step(1, 107)]))
-        XCTAssertEqual(StepsCounter.stepsInWindow([step(0, 100), step(2, 107)]), 7)
-        XCTAssertEqual(StepsCounter.stepsInWindow([step(0, 100), step(1, 104)]), 4)
+        XCTAssertNil(StepsCounter.stepsInWindow([step(0, 100), step(1, 170)]))
+        XCTAssertEqual(StepsCounter.stepsInWindow([step(0, 100), step(2, 170)]), 70)
+        XCTAssertEqual(StepsCounter.stepsInWindow([step(0, 100), step(1, 164)]), 64)
     }
 
     func testClassedStreamCountsOnlyWalkAndRunDeltas() {
@@ -64,8 +64,8 @@ final class StepsCounterTests: XCTestCase {
             step(10, 110, 0),
             step(20, 130, 1),
             step(30, 145, 2),
-            step(40, 170, nil),
-        ]), 35)
+            step(40, 170, nil), step(50, 180, -1),
+        ]), 70)
     }
 
     func testLegacyUnclassedStreamKeepsCounterFallback() {

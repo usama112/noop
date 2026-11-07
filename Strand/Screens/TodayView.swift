@@ -367,6 +367,7 @@ struct TodayView: View {
     // sample (a 4.0 strap, a pre-v19 row, or every record's @63 byte was invalid), then the steps tile
     // shows NO activity icon. A lightweight on-device readout that rides alongside the @57 step counter.
     @State private var stepActivityClassToday: Int?
+    @State private var activeCycleStepsToday: Int?
 
     // Today's heart rate as 5-minute bucket means (midnight → now), for the 24h trend chart.
     @State private var hrPoints: [TrendPoint] = []
@@ -2756,7 +2757,7 @@ struct TodayView: View {
             // #843/#813, same-day real count only (strap @57 or same-day phone import); never the latest
             // imported row or the sparkline tail (both went stale). Else fall through to the estimate.
             let appleStepsForDay = appleDays.last(where: { $0.day == selectedDayKey })?.steps
-            let real = (d?.steps).map { intString(Double($0)) }
+            let real = (d?.steps ?? (selectedDayOffset == 0 && dayCycleMode == .sleepOnset ? activeCycleStepsToday : nil)).map { intString(Double($0)) }
                 ?? appleStepsForDay.map { intString(Double($0)) }
             let est = stepsEstByDay[selectedDayKey].map { intString(Double($0)) }
             return real ?? est ?? "—"
@@ -4085,7 +4086,7 @@ struct TodayView: View {
             // is the most-recent value, not this day's): both froze the tile on an old import. Otherwise
             // fall through to the on-device estimate ("est."). Mirrors Android stepsForDay (#276/#150).
             let appleStepsForDay = appleDays.last(where: { $0.day == selectedDayKey })?.steps
-            let realSteps: String? = (d?.steps).map { intString(Double($0)) }
+            let realSteps: String? = (d?.steps ?? (selectedDayOffset == 0 && dayCycleMode == .sleepOnset ? activeCycleStepsToday : nil)).map { intString(Double($0)) }
                 ?? appleStepsForDay.map { intString(Double($0)) }
             let estSteps = stepsEstByDay[selectedDayKey]
             // H6, only an ESTIMATED day (no real strap/phone count, so the on-device estimate filled in)
@@ -4857,6 +4858,7 @@ struct TodayView: View {
         providerByMetric = c.providerByMetric
         hrPoints = c.hrPoints
         stepActivityClassToday = c.stepActivityClassToday
+        activeCycleStepsToday = c.activeCycleStepsToday
         liveTodayStrain = c.liveTodayStrain
         hrZoomDomain = Self.reclampHrZoom(hrZoomDomain, oldAxis: hrAxis, newAxis: c.hrAxis)
         hrAxis = c.hrAxis
@@ -5021,6 +5023,8 @@ struct TodayView: View {
         // re-added strap (the #904/#908 family). nil (no classed sample) hides the icon.
         let stepClassLocal = await repo.stepActivityClassLatest(from: windowStart, to: windowEndInclusive)
         stepActivityClassToday = stepClassLocal
+        let activeCycleStepsLocal = (selectedDayOffset == 0 && dayCycleMode == .sleepOnset) ? dayCycleSeries.last(where: { $0.day <= selectedDayKey && $0.value > 0 && Int($0.value) <= calendarEnd }).flatMap { m in repo.days.last(where: { $0.day == m.day })?.steps } : nil
+        activeCycleStepsToday = activeCycleStepsLocal
 
         // #860 item 1: the launch auto-land (#605/#739 "snap to the most recent data day when today is
         // empty") is RETIRED here. A fresh launch lands on today via `launchDayOffset` against the plain
@@ -5113,6 +5117,7 @@ struct TodayView: View {
             providerByMetric: providers,
             hrPoints: hrPointsLocal,
             stepActivityClassToday: stepClassLocal,
+            activeCycleStepsToday: activeCycleStepsLocal,
             liveTodayStrain: liveStrainLocal,
             hrAxis: newAxis,
             sleepToday: sleepTodayLocal,
@@ -5478,6 +5483,7 @@ struct TodayDayScopedCache {
     let providerByMetric: [String: ScoreInputProvider]
     let hrPoints: [TrendPoint]
     let stepActivityClassToday: Int?
+    let activeCycleStepsToday: Int?
     let liveTodayStrain: Double?
     let hrAxis: ClosedRange<Date>
     let sleepToday: CachedSleepSession?

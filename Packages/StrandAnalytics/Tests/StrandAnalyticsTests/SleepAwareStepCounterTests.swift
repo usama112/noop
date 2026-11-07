@@ -31,11 +31,11 @@ final class SleepAwareStepCounterTests: XCTestCase {
 
     func testDiagnosticRejectionReasonsAreSeparated() {
         let count = SleepAwareStepCounter.count([
-            sample(0, 100, 0), sample(1, 102, 1), sample(2, 110, 1),
-            sample(4, 117, 2), sample(5, 120, 0)
+            sample(0, 100, 0), sample(1, 102, 1), sample(2, 170, 1),
+            sample(4, 177, 2), sample(5, 180, -1)
         ], sleepSessions: [])
         XCTAssertEqual(count.totalTicks, 9)
         XCTAssertEqual(count.rejectedActivityClassTicks, 3)
-        XCTAssertEqual(count.rejectedImplausibleTicks, 8)
+        XCTAssertEqual(count.rejectedImplausibleTicks, 68)
     }
 }

@@ -477,6 +477,62 @@ final class HealthKitBridge: ObservableObject {
     /// upserts keyed by day).
     @discardableResult
     func sync(days: Int = 30) async -> Bool {
+        if auth == .entitlementMissing || auth == .unavailable {
+            guard !syncing else { return false }
+            syncing = true
+            defer { syncing = false }
+            guard let store = await repo.storeHandle() else { return false }
+            let cal = Calendar.current
+            let end = Date()
+            let pedometerDays = min(max(days, 1), 7)
+            var stepsByDay: [String: Int] = [:]
+            for offset in 0..<pedometerDays {
+                guard let dayStart = cal.date(byAdding: .day, value: -offset, to: cal.startOfDay(for: end)),
+                      let dayEnd = cal.date(byAdding: .day, value: 1, to: dayStart) else { continue }
+                let windowEnd = min(dayEnd, end)
+                if let steps = await WorkoutPedometer.steps(
+                    fromSec: Int(dayStart.timeIntervalSince1970),
+                    toSec: Int(windowEnd.timeIntervalSince1970)
+                ), steps > 0 {
+                    stepsByDay[HealthKitBridge.dayString(dayStart)] = steps
+                }
+            }
+            guard !stepsByDay.isEmpty,
+                  let minDay = stepsByDay.keys.min(),
+                  let maxDay = stepsByDay.keys.max() else { return false }
+            do {
+                let existing = try await store.appleDaily(deviceId: appleDeviceId, from: minDay, to: maxDay)
+                let existingByDay = Dictionary(existing.map { ($0.day, $0) }, uniquingKeysWith: { _, last in last })
+                let appleRows = stepsByDay.keys.sorted().map { day -> AppleDaily in
+                    let steps = stepsByDay[day]!
+                    let prev = existingByDay[day]
+                    let mergedSteps = max(prev?.steps ?? 0, steps)
+                    return AppleDaily(
+                        day: day,
+                        steps: mergedSteps,
+                        activeKcal: prev?.activeKcal,
+                        basalKcal: prev?.basalKcal,
+                        vo2max: prev?.vo2max,
+                        avgHr: prev?.avgHr,
+                        maxHr: prev?.maxHr,
+                        walkingHr: prev?.walkingHr,
+                        weightKg: prev?.weightKg
+                    )
+                }
+                let points = appleRows.compactMap { row -> MetricPoint? in
+                    guard let s = row.steps else { return nil }
+                    return MetricPoint(day: row.day, key: "steps", value: Double(s))
+                }
+                try await store.upsertAppleDaily(appleRows, deviceId: appleDeviceId)
+                try await store.upsertMetricSeries(points, deviceId: appleDeviceId)
+                lastSync = Date()
+                lastSyncDays = pedometerDays
+                lastError = nil
+                return true
+            } catch {
+                return false
+            }
+        }
         guard auth == .authorized else { return false }
         guard !syncing else {
             // A full sync includes write-back. If new strap data is landing concurrently, guarantee one

@@ -13,7 +13,7 @@ import WhoopProtocol
 ///
 /// Kept byte-for-byte in lockstep with the Kotlin twin `StepsCounter.stepsInWindow`.
 public enum StepsCounter {
-    private static let locomotionActivityClasses: Set<Int> = [1, 2]
+    private static let locomotionActivityClasses: Set<Int> = [0, 1, 2]
 
     static func hasActivityClasses(_ samples: [StepSample]) -> Bool {
         samples.contains { $0.activityClass != nil }
@@ -21,12 +21,12 @@ public enum StepsCounter {
 
     /// Kotlin twin: `StepsCounter.shouldCountDelta`.
     static func shouldCountDelta(activityClass: Int?, hasActivityClasses: Bool) -> Bool {
-        !hasActivityClasses || activityClass.map(locomotionActivityClasses.contains) == true
+        !hasActivityClasses || activityClass == nil || activityClass.map(locomotionActivityClasses.contains) == true
     }
 
     /// Absolute reboot/wrap guard, independent from the per-second plausibility gate below.
     public static let maxStepDelta = 512
-    public static let maxTicksPerSecond = 4
+    public static let maxTicksPerSecond = 64
 
     /// Kotlin twin: `StepsCounter.isPlausibleDelta`.
     static func isPlausibleDelta(previousTs: Int, currentTs: Int, delta: Int) -> Bool {

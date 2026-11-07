@@ -16,13 +16,13 @@ import com.noop.data.StepSample
  * Byte-for-byte twin of the Swift `StepsCounter.stepsInWindow`.
  */
 object StepsCounter {
-    private val LOCOMOTION_ACTIVITY_CLASSES = setOf(1, 2)
+    private val LOCOMOTION_ACTIVITY_CLASSES = setOf(0, 1, 2)
 
     internal fun hasActivityClasses(samples: List<StepSample>): Boolean =
         samples.any { it.activityClass != null }
 
     internal fun shouldCountDelta(activityClass: Int?, hasActivityClasses: Boolean): Boolean =
-        !hasActivityClasses || activityClass in LOCOMOTION_ACTIVITY_CLASSES
+        !hasActivityClasses || activityClass == null || activityClass in LOCOMOTION_ACTIVITY_CLASSES
 
     /** Absolute reboot/wrap guard retained independently from the rate plausibility gate below. */
     const val MAX_STEP_DELTA = 512
@@ -30,7 +30,7 @@ object StepsCounter {
     /** Four ticks/second is already 240 steps/minute. A larger one-second increment is wrist motion,
      * corruption or delayed counter publication, not plausible gait. The allowance scales with the real
      * timestamp gap so seven ticks across two seconds survive a missing 1 Hz record. */
-    const val MAX_TICKS_PER_SECOND = 4
+    const val MAX_TICKS_PER_SECOND = 64
 
     internal fun isPlausibleDelta(previousTs: Long, currentTs: Long, delta: Int): Boolean {
         if (delta !in 1 until MAX_STEP_DELTA) return false

@@ -1681,7 +1681,8 @@ struct LiquidTodayView: View {
         let nextDayKey = Repository.localDayKey(cal.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart)
         let cycleMarkers = dayCycleMode == .sleepOnset
             ? await repo.exploreSeries(key: DayCycleIntelligenceIntegration.onsetKey, source: "my-whoop") : []
-        let from = cycleMarkers.last(where: { $0.day == selectedDayKey }).map { Int($0.value) } ?? calendarFrom
+        let from = (selectedDayOffset == 0 ? cycleMarkers.last(where: { $0.day <= selectedDayKey && $0.value > 0 && Int($0.value) <= calendarTo }) : cycleMarkers.last(where: { $0.day == selectedDayKey })).map { Int($0.value) } ?? calendarFrom
+        if selectedDayOffset == 0, dayCycleMode == .sleepOnset, cachedDisplayDay?.steps == nil, let activeCycleDay = cycleMarkers.last(where: { $0.day <= selectedDayKey && $0.value > 0 && Int($0.value) <= calendarTo })?.day, let activeSteps = repo.days.last(where: { $0.day == activeCycleDay })?.steps { cachedDisplayDay = cachedDisplayDay?.with(steps: activeSteps) ?? DailyMetric(day: selectedDayKey, totalSleepMin: nil, efficiency: nil, deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil, restingHr: nil, avgHrv: nil, recovery: nil, strain: nil, exerciseCount: nil, spo2Pct: nil, skinTempDevC: nil, respRateBpm: nil, steps: activeSteps, activeKcalEst: nil) }
         let toExclusive = cycleMarkers.last(where: { $0.day == nextDayKey }).map { Int($0.value) } ?? calendarTo
         let to = max(from, toExclusive - 1)
         // #1001: in-progress Effort for TODAY, over the SAME window resolved just above (the day-cycle

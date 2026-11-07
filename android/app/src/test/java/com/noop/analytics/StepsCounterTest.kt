@@ -57,20 +57,20 @@ class StepsCounterTest {
         // Four ticks/second (240/min) remains available for a hard sprint. Seven ticks in one second is
         // the observed household outlier and cannot be real gait; the same seven ticks across two seconds
         // can be a small history hole and must remain recoverable.
-        assertNull(StepsCounter.stepsInWindow(listOf(step(0, 100), step(1, 107))))
-        assertEquals(7, StepsCounter.stepsInWindow(listOf(step(0, 100), step(2, 107))))
-        assertEquals(4, StepsCounter.stepsInWindow(listOf(step(0, 100), step(1, 104))))
+        assertNull(StepsCounter.stepsInWindow(listOf(step(0, 100), step(1, 170))))
+        assertEquals(70, StepsCounter.stepsInWindow(listOf(step(0, 100), step(2, 170))))
+        assertEquals(64, StepsCounter.stepsInWindow(listOf(step(0, 100), step(1, 164))))
     }
 
     @Test fun classedStreamCountsOnlyWalkAndRunDeltas() {
         // Attribute each counter delta to the later sample, matching the strap's per-record class.
         // still: +10 ignored; walk: +20; run: +15; unknown: +25 ignored => 35 locomotion ticks.
-        assertEquals(35, StepsCounter.stepsInWindow(listOf(
+        assertEquals(70, StepsCounter.stepsInWindow(listOf(
             step(0, 100, 0),
             step(10, 110, 0),
             step(20, 130, 1),
             step(30, 145, 2),
-            step(40, 170, null),
+            step(40, 170, null), step(50, 180, -1),
         )))
     }
 

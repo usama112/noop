@@ -75,7 +75,7 @@ class StepsAnalyticsTest {
         // THE BUG (#132/#276/#316). A realistic ascending cumulative counter sampled at 1 Hz. The OLD
         // code summed the raw running total (byte @57 alone summed) — exploding the count; the NEW
         // wrap-aware diff sums only the per-record increments and yields a sane number.
-        val counters = listOf(100, 102, 102, 105, 106, 106, 109, 111, 113, 115)
+        val counters = listOf(100, 127, 127, 130, 131, 131, 140, 152, 160, 175)
         val samples = counters.mapIndexed { i, c -> step(i.toLong(), c) }
         // NEW behaviour: sum of wrap-aware deltas == last - first (all small increments, none >= 512).
         val sane = counters.last() - counters.first() // 75

@@ -17,16 +17,16 @@ class SleepAwareStepCounterTest {
         val samples = listOf(
             step(0, 100, 0),
             step(1, 102, 1),
-            step(2, 110, 1), // impossible 8 ticks/s: rejected by StepsCounter too
-            step(4, 117, 2),
-            step(5, 120, 0),
+            step(2, 170, 1), // impossible 68 ticks/s: rejected by StepsCounter too
+            step(4, 177, 2),
+            step(5, 180, -1),
         )
 
         assertEquals(StepsCounter.stepsInWindow(samples), SleepAwareStepCounter.stepsInWindow(samples, emptyList()))
         assertEquals(9, SleepAwareStepCounter.stepsInWindow(samples, emptyList()))
         val detail = SleepAwareStepCounter.count(samples, emptyList())
         assertEquals(3, detail.rejectedActivityClassTicks)
-        assertEquals(8, detail.rejectedImplausibleTicks)
+        assertEquals(68, detail.rejectedImplausibleTicks)
     }
 
     @Test fun awakeGapInsideSleepCountsWithNormalRules() {
@@ -124,7 +124,7 @@ class SleepAwareStepCounterTest {
 
     @Test fun pagingUsesOneActivityClassModeForTheWholeWindow() {
         val accumulator = SleepAwareStepCounter.Accumulator(emptyList(), hasActivityClasses = true)
-        accumulator.acceptPage(listOf(step(0, 100, null), step(1, 102, null)))
+        accumulator.acceptPage(listOf(step(0, 100, -1), step(1, 102, -1)))
         accumulator.acceptPage(listOf(step(2, 104, 1)))
 
         // Unknown +2 in page one is rejected because a later page proves this is a classed stream.
